@@ -1,6 +1,3 @@
-5
-S -> TH
-H -> +TH e
-T -> FY
-Y -> *FY e
-F -> (S) id
+2
+S -> A
+A -> A b

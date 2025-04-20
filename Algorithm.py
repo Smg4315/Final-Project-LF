@@ -126,9 +126,12 @@ def FIRST(grammar):
     return first # After we finish we return the respective dictionary
 
 
+# We create the function to generate the FOLLOW sets it recives the dictionary that contains the grammar, the dictionary of the FIRST set and the start symbol (Always S). 
 def FOLLOW(grammar, first, start_symbol):
+
+    # We create another dictionary that will representate the FOLLOW sets of each NT
     follow = defaultdict(set)
-    follow[start_symbol].add('$')
+    follow[start_symbol].add('$') # We add at the beggining the '$' to the initial symbol
 
     changed = True
     while changed:
@@ -151,6 +154,6 @@ def FOLLOW(grammar, first, start_symbol):
                             trailer = first[symbol]
     return follow
 
-# Ejecutar main
+# run main
 if __name__ == "__main__":
     main()
