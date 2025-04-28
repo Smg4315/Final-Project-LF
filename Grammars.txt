@@ -1,3 +1,7 @@
-2
-S -> A
-A -> A b
+6
+S -> ABCDE
+A -> a e
+B -> b e
+C -> c
+D -> d e
+E -> p E
