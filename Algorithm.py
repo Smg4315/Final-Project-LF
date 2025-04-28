@@ -13,7 +13,7 @@ def main():
 
     # We generate FIRST AND FOLLOW sets takin into account the specific grammar
     first_sets = FIRST(gramatica)
-    follow_sets = FOLLOW(gramatica, first_sets, start_symbol='S')
+    follow_sets = FOLLOW(gramatica, first_sets)
 
     # We print them to see that they're working
     print("\nConjuntos FIRST:")
@@ -43,7 +43,7 @@ def leer_gramatica(archivo):
                 # We verify that the line contains a grammar rule
                 if '->' in linea:
 
-                    # We split the line into the left and right sides of the rule to separate the productions takn into account the symbol '->'
+                    # We split the line into the left and right sides of the rule to separate the productions takin into account the symbol '->'
                     lado_izq, lado_der = linea.split('->')
 
                     # We delete empty spaces (beggining and end) in the left and right sides of the rule and we assign it corresponding function forward
@@ -64,7 +64,7 @@ def leer_gramatica(archivo):
                         gramatica[no_terminal].append(alt)
 
                 else:
-                    print(f"Error: La regla '{linea}' no es válida.")
+                    print(f"Error: La regla '{linea}' no es válida. se esperaba 'no_terminal -> producciones'.")
                     sys.exit(1)
             return gramatica
         
@@ -77,7 +77,8 @@ def FIRST(grammar):
 
     # We create another dictionary that will contain the FIRST set of each non-terminal where each key is the non terminal and it value its the respetive FIRST set
     first = defaultdict(set)
-    # Boolean to know when to stop 
+
+    # Boolean to know when to stop (there is no more ads to any FIRSt set)
     changed = True
 
     # Definition of the FIRST sets of terminals
@@ -125,33 +126,50 @@ def FIRST(grammar):
 
     return first # After we finish we return the respective dictionary
 
-
 # We create the function to generate the FOLLOW sets it recives the dictionary that contains the grammar, the dictionary of the FIRST set and the start symbol (Always S). 
-def FOLLOW(grammar, first, start_symbol):
+def FOLLOW(grammar, first):
 
     # We create another dictionary that will representate the FOLLOW sets of each NT
     follow = defaultdict(set)
-    follow[start_symbol].add('$') # We add at the beggining the '$' to the initial symbol
+    follow['S'].add('$') # We add at the beggining the '$' to the initial symbol
 
+    # We create a boolean to know when to stop (there is no more ads to any FOLLOW set)
     changed = True
-    while changed:
+    while changed: # The process will be repeated until there are no more changes
+
+        # We assume that there are no changes at the beggining
         changed = False
-        for lhs in grammar:
-            for production in grammar[lhs]:
-                trailer = follow[lhs].copy()
+
+        for nt in grammar: # We iterate over the dictionary that represents each NT H -> [['+', 'T', 'H'], ['e']]
+            for production in grammar[nt]: # We go inside the values of each NT in the dictionary ['+', 'T', 'H'] then ['e']
+                
+                # We are assigning a copy of what is on the FOLLOW set of the NT that we are seeing to the trailer variable (to use it later)
+                trailer = follow[nt].copy() 
+
+                # This trailer variable will be used to add the respective symbols to the FOLLOW set of the NT that we are seeing
+                # taking into account the 3 rules of the FOLLOW set 
+
+                # We are reverse the production to check the symbols from right to left (its more convenient for the FOLLOW)
                 for chunk in reversed(production):
                     for symbol in reversed(chunk):
-                        if symbol.isupper():
-                            before = len(follow[symbol])
-                            follow[symbol].update(trailer)
+
+                        # We check if the symbol is a terminal or a special symbol
+                        if symbol.isupper(): # If it is a non-terminal
+
+                            # We add to the FOLLOW of the nt 
+                            before = len(follow[symbol]) # We save the size of it to check if it were changed
+                            follow[symbol].update(trailer) # We update the trailer taking into account the last symbol (that is really the next)
+
+                            # WE prepare the FOLLOW (trailer) for the next iteration
+
                             if 'e' in first[symbol]:
-                                trailer.update(first[symbol] - {'e'})
+                                trailer.update(first[symbol] - {'e'}) # If there is an e in the first set we put it off for the next rule (withouth delenting the FOLLOW of the producer)
                             else:
-                                trailer = first[symbol]
-                            if len(follow[symbol]) > before:
+                                trailer = first[symbol] # Else we just put the first set of the symbol to the next symbol to use it (Deleting the FOLLOW of the producer)
+                            if len(follow[symbol]) > before: # If there were changes, we continue
                                 changed = True
                         else:
-                            trailer = first[symbol]
+                            trailer = {symbol} # If it is a terminal or special symbol we just put it in the trailer variable to use it for the next nt, because this terminal will be the FOLLOW
     return follow
 
 # run main
