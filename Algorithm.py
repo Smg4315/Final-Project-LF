@@ -15,6 +15,13 @@ def main():
     first_sets = FIRST(gramatica)
     follow_sets = FOLLOW(gramatica, first_sets)
 
+    table = parsing_table(gramatica, first_sets, follow_sets) # We generate the parsing table
+
+    for no_terminal, entradas in table.items():
+        print(f"No terminal: {no_terminal}")
+        for terminal, produccion in entradas.items():
+            print(f"  Con terminal '{terminal}': {produccion}")
+
     # We print them to see that they're working
     print("\nConjuntos FIRST:")
     for nt in gramatica:
@@ -172,6 +179,26 @@ def FOLLOW(grammar, first):
                         else:
                             trailer = {symbol} # If it is a terminal or special symbol we just put it in the trailer variable to use it for the next nt, because this terminal will be the FOLLOW
     return follow
+
+# We create the function to generate the parsing table it recives the dictionary that contains the grammar, the dictionary of the FIRST set and the FOLLOW set.
+def parsing_table(grammar, first, follow):
+
+ tabla = defaultdict(lambda: defaultdict(list))# We create a dictionary of dictionaries to store the parsing table 
+
+ # We iterate the grammar 
+ for nt in grammar: # Iterate over the grammar dictionary
+    for symbol in first[nt]:
+        tabla[nt][symbol] = grammar[nt]
+
+        
+     
+
+ #tabla['S']['+'] = 'S -> + T H'
+ #tabla['S']['p'] = 'S -> e'
+ #tabla['A']['P'] = 'A -> P'
+
+ return tabla
+
 
 # run main
 if __name__ == "__main__":
