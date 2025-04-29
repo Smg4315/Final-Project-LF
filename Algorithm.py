@@ -91,7 +91,7 @@ def FIRST(grammar):
                         first[symbol].add(symbol) # We add it to the First dictionary with the same symbol
 
 
-    # Now we are finding the FIRST sets of the NON-TERMINAL taking inton account the FIRST of the terminals
+    # Now we are finding the FIRST sets of the NON-TERMINAL taking into account the FIRST of the terminals
     # we'll repeat this procces til there is no more changes made (this makes sure all the NT end up with it FIRST set)
     # This procces migth be repeated multiple times because the first thing that a NT could be another NT that is not created yet, so we repeat this til the NT that we need is created
     while changed:
@@ -110,13 +110,14 @@ def FIRST(grammar):
 
                     # We evaluate each symbol of the production takin into account the rules of FIRST set
                     for symbol in chunk:
-                        first[nt].update(first[symbol] - {'e'}) # We assign the actual symbol the first symbol of it production rule (if it has been not created we wait for a future iteration and create the specific nt that is left)
-                        if 'e' in first[symbol]: # If the first symbol of the rule contains e string we continue with the other symbol til it dont or til there is no more symbols
-                            continue
-                        else: # If it doesnt, our work with the specific rule is done, and we can check the other rule
-                            nullable = False
-                            break
-                    i += 1
+                            first[nt].update(first[symbol] - {'e'}) # We assign the actual symbol the first symbol of it production rule (if it has been not created we wait for a future iteration and create the specific nt that is left)
+                            if 'e' in first[symbol]: # If the first symbol of the rule contains e string we continue with the other symbol til it dont or til there is no more symbols
+                                continue
+                            else: # If it doesnt, our work with the specific rule is done, and we can check the other rule
+                                nullable = False
+                                break
+                    if nullable:
+                         i += 1 
 
                 if nullable: # If all the chars of a productions contains the e, or me are reading the e, we add it to the FIRST set.
                     first[nt].add('e')
@@ -165,7 +166,7 @@ def FOLLOW(grammar, first):
                             if 'e' in first[symbol]:
                                 trailer.update(first[symbol] - {'e'}) # If there is an e in the first set we put it off for the next rule (withouth delenting the FOLLOW of the producer)
                             else:
-                                trailer = first[symbol] # Else we just put the first set of the symbol to the next symbol to use it (Deleting the FOLLOW of the producer)
+                                trailer = first[symbol].copy() # Else we just put the first set of the symbol to the next symbol to use it (Deleting the FOLLOW of the producer)
                             if len(follow[symbol]) > before: # If there were changes, we continue
                                 changed = True
                         else:
