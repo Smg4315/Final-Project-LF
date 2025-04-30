@@ -6,6 +6,7 @@ import sys
 def main():
     # We create the dictionary and fill it with the respective grammar
     gramatica = leer_gramatica('Grammars.txt')
+    
 
     # We print the dictionary to verify that is working correctly
     for no_terminal, producciones in gramatica.items():
@@ -17,7 +18,9 @@ def main():
 
     table = parsing_table(gramatica, first_sets, follow_sets) # We generate the parsing table
 
-    for no_terminal, entradas in table.items():
+    if table:
+     print("grammar is LL(1)")
+     for no_terminal, entradas in table.items():
         print(f"No terminal: {no_terminal}")
         for terminal, produccion in entradas.items():
             print(f"  Con terminal '{terminal}': {produccion}")
@@ -187,16 +190,55 @@ def parsing_table(grammar, first, follow):
 
  # We iterate the grammar 
  for nt in grammar: # Iterate over the grammar dictionary
-    for symbol in first[nt]:
-        tabla[nt][symbol] = grammar[nt]
+        for production in grammar[nt]: # For each production rule of the NT
+         
+         if 'e' in first[nt]:
+            if 'e' not in production:
+                for symbol in first[nt]:
+                 if symbol != 'e':
+                  if (symbol in first[production[0]]) or ( 'e' in first[production[0]] ):
+                   
+                   fr = first[production[0]]
 
-        
-     
+                   for i in range(len(production)):
+                       if not production[i].isupper():
+                           fr = production[i]
+                           break
+                       
+                   if (symbol in fr or symbol == fr):
 
- #tabla['S']['+'] = 'S -> + T H'
- #tabla['S']['p'] = 'S -> e'
- #tabla['A']['P'] = 'A -> P'
+                    if not tabla[nt][symbol]: 
+                     tabla[nt][symbol] = production
+                    else:
+                     print("Parsing table is not LL(1)")
+                     return
+                else:
+                    for symbol in follow[nt]:
+                     if not tabla[nt][symbol]: 
+                      tabla[nt][symbol] = production
+                    else:
+                     print("Parsing table is not LL(1)")
+                     return
+                    
+         else:
+            for symbol in first[nt]:
+                 if (symbol in first[production[0]]) or ('e' in first[production[0]]):
+                   
+                   fr = first[production[0]]
 
+                   for i in range(len(production)):
+                       if not production[i].isupper():
+                           fr = production[i]
+                           break
+                       
+                 if (symbol in fr or symbol == fr):
+
+                    if not tabla[nt][symbol]: 
+                     tabla[nt][symbol] = production
+                    else:
+                     print("Parsing table is not LL(1)")
+                     return
+ 
  return tabla
 
 
