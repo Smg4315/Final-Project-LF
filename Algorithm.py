@@ -13,40 +13,22 @@ def main():
     first_sets = FIRST(gramatica)
     follow_sets = FOLLOW(gramatica, first_sets)
 
-    for i in range (len(strings)):
-       print(f"String {i+1}: {strings[i]}")
+    tabla = defaultdict(lambda: defaultdict(list)) # We create a dictionary of dictionaries to store the parsing table 
 
     # We check if the grammar has left recursion (if is not the case, the create the parsing table: )
-    if not check_left_recursion(gramatica):
-        table = parsing_table(gramatica, first_sets, follow_sets) # We generate the parsing table
+    if not check_left_recursion(gramatica) and parsing_table(gramatica, first_sets, follow_sets, tabla):
+        print("Its working nice")
     else:
         print("Grammar his not LL(1) because it has left recursion")
         return
 
      # We do the LL(1) parsing of each string
     for i in range (len(strings)):
-        LL1(table, strings[i])
+        LL1(tabla, strings[i])
         if LL1:
             print(f"String {i+1} is accepted")
         else:
             print(f"String {i+1} is not accepted")
-
-    ''' if table:
-     print("grammar is LL(1)")
-     for no_terminal, entradas in table.items():
-        print(f"No terminal: {no_terminal}")
-        for terminal, produccion in entradas.items():
-            print(f"  Con terminal '{terminal}': {produccion}") '''
-
-    ''' # We print them to see that they're working
-    print("\nConjuntos FIRST:")
-    for nt in gramatica:
-        print(f"FIRST({nt}) = {first_sets[nt]}")
-
-    print("\nConjuntos FOLLOW:")
-    for nt in gramatica:
-        print(f"FOLLOW({nt}) = {follow_sets[nt]}")
-    ''' 
     return
 
 # We define the function that will read the grammar from the file and create a dictionary with it.
@@ -216,9 +198,7 @@ def FOLLOW(grammar, first):
 
 # We create the function to generate the parsing table it recives the dictionary that contains the grammar, the dictionary of the FIRST set and the FOLLOW set.
 # This function is used to produce the parsing table
-def parsing_table(grammar, first, follow):
-
- tabla = defaultdict(lambda: defaultdict(list)) # We create a dictionary of dictionaries to store the parsing table 
+def parsing_table(grammar, first, follow, tabla):
 
  # We iterate the grammar 
  for nt in grammar: # Iterate over the grammar dictionary
@@ -243,7 +223,7 @@ def parsing_table(grammar, first, follow):
                                  else: # If the parsing table is not empty we have to check if the production rule is the same as the one that we are going to add
                                      if tabla[nt][symbol] != production: # If the production rule is not the same that was already there, then the grammar is not LL(1).
                                          print("Grammar is not LL(1) because is ambiguous")
-                                         return # the function will return None
+                                         return False# the function will return None
              
              # We only take into account the FOLLOW set if the production rule is a null production because its the only posible case
              else: # If the production rule is a null production, we have to add each terminal of the FOLLOW set to the parsing table
@@ -253,7 +233,7 @@ def parsing_table(grammar, first, follow):
                          tabla[nt][symbol] = production
                      else:
                          print("Grammar is not LL(1) because is ambiguous")
-                         return
+                         return False
 
          # If the FIRST set of the NT does not contain e, we dont take into account the FOLLOW set                      
          else:
@@ -271,7 +251,7 @@ def parsing_table(grammar, first, follow):
                          else:
                              if tabla[nt][symbol] != production: # If the production rule is not the same that was already there, then the grammar is not LL(1).
                                  print("Grammar is not LL(1) because is ambiguous")
-                                 return # the function will return None
+                                 return False # the function will return None
           
          # We are checking the cases where the production rule is a null production (its like to do it again but not neccesary with only e productions)
          if derives_epsilon(production, first):
@@ -281,9 +261,10 @@ def parsing_table(grammar, first, follow):
                  else:
                      if tabla[nt][symbol] != production:
                          print("Grammar is not LL(1) because is ambiguous")
-                         return 
-
- return tabla
+                         return False
+ 
+ print("The grammar is LL(1)")
+ return True
 
 # Get the FIRST set for a production - to verify if the production rule produces the terminal that we need
 def fr_terminal(production, first):
