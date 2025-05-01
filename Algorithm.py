@@ -7,17 +7,18 @@ def main():
     # We create the dictionary and fill it with the respective grammar
     gramatica = leer_gramatica('Grammars.txt')
     
-
-    # We print the dictionary to verify that is working correctly
-    for no_terminal, producciones in gramatica.items():
-        print(f"{no_terminal} -> {producciones}")
-
     # We generate FIRST AND FOLLOW sets takin into account the specific grammar
     first_sets = FIRST(gramatica)
     follow_sets = FOLLOW(gramatica, first_sets)
 
-    table = parsing_table(gramatica, first_sets, follow_sets) # We generate the parsing table
+    # We check if the grammar has left recursion (if is not the case, the create the parsing table: )
+    if not check_left_recursion(gramatica):
+        table = parsing_table(gramatica, first_sets, follow_sets) # We generate the parsing table
+    else:
+        print("Grammar his not LL(1) because it has left recursion")
+        return
 
+    # We check if the parsing table is empty, if it is we print the parsing table
     if table:
      print("grammar is LL(1)")
      for no_terminal, entradas in table.items():
@@ -186,61 +187,104 @@ def FOLLOW(grammar, first):
 # We create the function to generate the parsing table it recives the dictionary that contains the grammar, the dictionary of the FIRST set and the FOLLOW set.
 def parsing_table(grammar, first, follow):
 
- tabla = defaultdict(lambda: defaultdict(list))# We create a dictionary of dictionaries to store the parsing table 
+ tabla = defaultdict(lambda: defaultdict(list)) # We create a dictionary of dictionaries to store the parsing table 
 
  # We iterate the grammar 
  for nt in grammar: # Iterate over the grammar dictionary
-        for production in grammar[nt]: # For each production rule of the NT
+     for production in grammar[nt]: # For each production rule of the NT
          
-         if 'e' in first[nt]:
-            if 'e' not in production:
-                for symbol in first[nt]:
-                 if symbol != 'e':
-                  if (symbol in first[production[0]]) or ( 'e' in first[production[0]] ):
-                   
-                   fr = first[production[0]]
+         if 'e' in first[nt]: # We verify if the FIRST set of the NT contains e (in case that yes, we have to check the terminals of the FOLLOW set)
+             if production != ['e']: # We check if the production rule contains e
+                 
+                 # If it is not a null production:
 
-                   for i in range(len(production)):
-                       if not production[i].isupper():
-                           fr = production[i]
-                           break
-                       
-                   if (symbol in fr or symbol == fr):
-
-                    if not tabla[nt][symbol]: 
-                     tabla[nt][symbol] = production
-                    else:
-                     print("Parsing table is not LL(1)")
-                     return
-                else:
-                    for symbol in follow[nt]:
+                 # We are going to iterate over the symbols of the first set of the NT
+                 for symbol in first[nt]:
+                     if symbol != 'e': #it must be different from e because e is not contempled in parsing table
+                             
+                             # We get the first terminal of the production rule, we will take into account the posible cases (its jus a nt that produce the terminal)
+                             fr = fr_terminal(production, first)
+                             
+                             if (symbol in fr): # Here´s where we check if the production really produces the terminal that we need
+                                 
+                                 if not tabla[nt][symbol]: # If the parsing table is empty we add the production rule
+                                     tabla[nt][symbol] = production
+                                 else: # If the parsing table is not empty we have to check if the production rule is the same as the one that we are going to add
+                                     if tabla[nt][symbol] != production: # If the production rule is not the same that was already there, then the grammar is not LL(1).
+                                         print("Grammar is not LL(1) because is ambiguous")
+                                         return # the function will return None
+             
+             # We only take into account the FOLLOW set if the production rule is a null production because its the only posible case
+             else: # If the production rule is a null production, we have to add each terminal of the FOLLOW set to the parsing table
+                 for symbol in follow[nt]:
+                     # if the table is empty we add the production rule
                      if not tabla[nt][symbol]: 
-                      tabla[nt][symbol] = production
-                    else:
-                     print("Parsing table is not LL(1)")
-                     return
-                    
+                         tabla[nt][symbol] = production
+                     else:
+                         print("Grammar is not LL(1) because is ambiguous")
+                         return
+
+         # If the FIRST set of the NT does not contain e, we dont take into account the FOLLOW set                      
          else:
-            for symbol in first[nt]:
-                 if (symbol in first[production[0]]) or ('e' in first[production[0]]):
-                   
-                   fr = first[production[0]]
 
-                   for i in range(len(production)):
-                       if not production[i].isupper():
-                           fr = production[i]
-                           break
-                       
-                 if (symbol in fr or symbol == fr):
+             # We are going to iterate over the symbols of the first set of the NT
+             for symbol in first[nt]:
 
-                    if not tabla[nt][symbol]: 
-                     tabla[nt][symbol] = production
-                    else:
-                     print("Parsing table is not LL(1)")
-                     return
- 
+                     # The same process as before, we get the first terminal of the production rule 
+                     fr = fr_terminal(production, first)
+                     
+                     if (symbol in fr): # Here´s where we check if the production really produces the terminal that we need
+                         # We check if the parsing table is empty, if it is we add the production rule, 
+                         if not tabla[nt][symbol]: 
+                             tabla[nt][symbol] = production
+                         else:
+                             if tabla[nt][symbol] != production: # If the production rule is not the same that was already there, then the grammar is not LL(1).
+                                 print("Grammar is not LL(1) because is ambiguous")
+                                 return # the function will return None
+          
+         # We are checking the cases where the production rule is a null production (its like to do it again but not neccesary with only e productions)
+         if derives_epsilon(production, first):
+             for symbol in follow[nt]:
+                 if not tabla[nt][symbol]:
+                     tabla[nt][symbol] = production # We add the production rule (not neccesarily null production)
+                 else:
+                     if tabla[nt][symbol] != production:
+                         print("Grammar is not LL(1) because is ambiguous")
+                         return 
+
  return tabla
 
+# Get the FIRST set for a production - to verify if the production rule produces the terminal that we need
+def fr_terminal(production, first):
+    # We initialize the FIRST set with the first terminal of the production
+    fr = set()
+    
+    for symbol in production:
+        if not symbol.isupper():  # terminal symbol
+            fr.add(symbol)  # add terminal symbol to FIRST set
+            break
+        else:  # non-terminal symbol
+            fr.update(first[symbol])  # add FIRST of non-terminal to FIRST set
+            if 'e' not in first[symbol]:  # If the non-terminal doesn't derive epsilon, break
+                break
+    
+    return fr  # return the FIRST set for the production
+     
+# We create the function to check if a production derives epsilon (e) or not (set of nt) - to take into account special cases
+def derives_epsilon(production, first):
+    for symbol in production:
+        if symbol not in first or 'e' not in first[symbol]: # If the symbol is not in the FIRST set or it does not derive epsilon
+            return False
+    return True
+
+# We create the function to check if the grammar has left recursion
+def check_left_recursion(grammar):
+    for nt in grammar:
+        for production in grammar[nt]: # We verify each production rule of the NT
+            if production[0] == nt:  # left recursion check
+                print(f"Grammar has left recursion at {nt} → {production}")
+                return True
+    return False
 
 # run main
 if __name__ == "__main__":
