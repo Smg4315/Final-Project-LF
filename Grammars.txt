@@ -1,4 +1,9 @@
 3
-S -> SB
+S -> AB
 A -> aA d
 B -> bBc e
+
+<--- Strings --->
+d$
+adbc$
+a$

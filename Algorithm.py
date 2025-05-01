@@ -4,12 +4,17 @@ import sys
 
 # We define the main function that will create at the moment a dictionary with the specified grammar.
 def main():
+
     # We create the dictionary and fill it with the respective grammar
-    gramatica = leer_gramatica('Grammars.txt')
+    strings = [] # We create an empty array that will be used to store the strings that we are going to analyze
+    gramatica = leer_gramatica('Grammars.txt', strings)
     
     # We generate FIRST AND FOLLOW sets takin into account the specific grammar
     first_sets = FIRST(gramatica)
     follow_sets = FOLLOW(gramatica, first_sets)
+
+    for i in range (len(strings)):
+       print(f"String {i+1}: {strings[i]}")
 
     # We check if the grammar has left recursion (if is not the case, the create the parsing table: )
     if not check_left_recursion(gramatica):
@@ -36,7 +41,7 @@ def main():
         print(f"FOLLOW({nt}) = {follow_sets[nt]}")
 
 # We define the function that will read the grammar from the file and create a dictionary with it.
-def leer_gramatica(archivo):
+def leer_gramatica(archivo, arreglo):
 
     # We try to open the file and read its contents takin into account the posible errors that may occur
     try:
@@ -77,6 +82,22 @@ def leer_gramatica(archivo):
                 else:
                     print(f"Error: La regla '{linea}' no es válida. se esperaba 'no_terminal -> producciones'.")
                     sys.exit(1)
+        
+            # now we read the strings that we are going to analyze
+
+            # Skip the lines until the "Strings to be analyzed" section
+            while True:
+                linea = f.readline().strip()
+                if linea == "<--- Strings --->":
+                    break  # Found the section, break the loop
+
+            # Read the strings and store them in the arreglo as a list of strings
+            while True:
+                linea = f.readline().strip()
+                if not linea:
+                    break  # End of the strings section
+                arreglo.append(linea)
+
             return gramatica
         
     except FileNotFoundError:
@@ -185,6 +206,7 @@ def FOLLOW(grammar, first):
     return follow
 
 # We create the function to generate the parsing table it recives the dictionary that contains the grammar, the dictionary of the FIRST set and the FOLLOW set.
+# This function is used to produce the parsing table
 def parsing_table(grammar, first, follow):
 
  tabla = defaultdict(lambda: defaultdict(list)) # We create a dictionary of dictionaries to store the parsing table 
@@ -271,6 +293,7 @@ def fr_terminal(production, first):
     return fr  # return the FIRST set for the production
      
 # We create the function to check if a production derives epsilon (e) or not (set of nt) - to take into account special cases
+# This function is used to produce the parsing table
 def derives_epsilon(production, first):
     for symbol in production:
         if symbol not in first or 'e' not in first[symbol]: # If the symbol is not in the FIRST set or it does not derive epsilon
