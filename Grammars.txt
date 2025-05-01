@@ -1,9 +1,10 @@
 3
-S -> AB
-A -> aA d
-B -> bBc e
+S -> aB e
+B -> bC e
+C -> cS e
 
 <--- Strings --->
-d$
-adbc$
 a$
+abc$
+abcabcabc$
+aba$

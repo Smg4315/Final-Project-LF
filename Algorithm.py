@@ -7,29 +7,70 @@ def main():
 
     # We create the dictionary and fill it with the respective grammar
     strings = [] # We create an empty array that will be used to store the strings that we are going to analyze
+    LL = False # We create this bools to clasify wether a grammmar is LL(1) or SLR(1) to implement it corresponding parser or both
+    LR = True # supossing
+
     gramatica = leer_gramatica('Grammars.txt', strings)
     
     # We generate FIRST AND FOLLOW sets takin into account the specific grammar
     first_sets = FIRST(gramatica)
     follow_sets = FOLLOW(gramatica, first_sets)
 
-    tabla = defaultdict(lambda: defaultdict(list)) # We create a dictionary of dictionaries to store the parsing table 
+    # We create a dictionary of dictionaries to store the parsing table (globaly - LL(1)) 
+    tabla = defaultdict(lambda: defaultdict(list)) 
 
-    # We check if the grammar has left recursion (if is not the case, the create the parsing table: )
-    if not check_left_recursion(gramatica) and parsing_table(gramatica, first_sets, follow_sets, tabla):
-        print("Its working nice")
+    # With this, we clasify if the grammar is LL or not
+    if ( not check_left_recursion(gramatica) ) and ( parsing_table(gramatica, first_sets, follow_sets, tabla) ):
+        LL = True
     else:
-        print("Grammar his not LL(1) because it has left recursion")
-        return
+        LL = False
 
-     # We do the LL(1) parsing of each string
-    for i in range (len(strings)):
-        LL1(tabla, strings[i])
-        if LL1:
-            print(f"String {i+1} is accepted")
-        else:
-            print(f"String {i+1} is not accepted")
-    return
+    # In this space the grammar is clasified by LR or not... (Andres n Sebastian 😁)
+
+    if LL and LR: # If the grammar is both LL(1) and LR(1) the user decides what grammar to use:
+
+        print("The grammar is both LL and LR \n ")
+        option = '' # We initializate this
+
+        while (option != 'Q'):
+
+            print("Select a parser (T: for LL(1), B: for SLR(1), Q: quit):")
+            option = input()
+                
+            if option == 'T': # We do the LL(1) parsing for each string given 
+                print("LL(1) parsing \n ")
+
+                # We do the LL(1) parsing of each string
+                for i in range (len(strings)):
+                    bool_LL = LL1(tabla, strings[i])
+                    if bool_LL:
+                        print(f"String {strings[i]} is accepted \n ")
+                    else:
+                        print(f"String {strings[i]} is rejected \n ") 
+
+            elif option == 'B':
+                print("SLR(1) parsing \n ")
+            elif option == 'Q':
+                break
+            else:
+                print("invalid option try again \n ")
+
+    elif LL:
+        print("The grammar is LL(1) \n ")
+
+        # We do the LL(1) parsing of each string
+        for i in range (len(strings)):
+            bool_LL = LL1(tabla, strings[i])
+            if bool_LL:
+                print(f"String {strings[i]} is accepted\n")
+            else:
+                print(f"String {strings[i]} is rejected\n")
+
+    elif LR:
+        print("The grammar is SLR(1)\n")
+    else:
+        print("Grammar is neither LL(1) nor SLR(1). \n")
+            
 
 # We define the function that will read the grammar from the file and create a dictionary with it.
 def leer_gramatica(archivo, arreglo):
@@ -71,7 +112,7 @@ def leer_gramatica(archivo, arreglo):
                         gramatica[no_terminal].append(alt)
 
                 else:
-                    print(f"Error: La regla '{linea}' no es válida. se esperaba 'no_terminal -> producciones'.")
+                    print(f"Error: La regla '{linea}' no es válida. se esperaba 'no_terminal -> producciones'.\n")
                     sys.exit(1)
         
             # now we read the strings that we are going to analyze
@@ -222,7 +263,7 @@ def parsing_table(grammar, first, follow, tabla):
                                      tabla[nt][symbol] = production
                                  else: # If the parsing table is not empty we have to check if the production rule is the same as the one that we are going to add
                                      if tabla[nt][symbol] != production: # If the production rule is not the same that was already there, then the grammar is not LL(1).
-                                         print("Grammar is not LL(1) because is ambiguous")
+                                         print("Grammar is not LL(1) because is ambiguous\n")
                                          return False# the function will return None
              
              # We only take into account the FOLLOW set if the production rule is a null production because its the only posible case
@@ -232,7 +273,7 @@ def parsing_table(grammar, first, follow, tabla):
                      if not tabla[nt][symbol]: 
                          tabla[nt][symbol] = production
                      else:
-                         print("Grammar is not LL(1) because is ambiguous")
+                         print("Grammar is not LL(1) because is ambiguous\n")
                          return False
 
          # If the FIRST set of the NT does not contain e, we dont take into account the FOLLOW set                      
@@ -250,7 +291,7 @@ def parsing_table(grammar, first, follow, tabla):
                              tabla[nt][symbol] = production
                          else:
                              if tabla[nt][symbol] != production: # If the production rule is not the same that was already there, then the grammar is not LL(1).
-                                 print("Grammar is not LL(1) because is ambiguous")
+                                 print("Grammar is not LL(1) because is ambiguous\n")
                                  return False # the function will return None
           
          # We are checking the cases where the production rule is a null production (its like to do it again but not neccesary with only e productions)
@@ -260,10 +301,10 @@ def parsing_table(grammar, first, follow, tabla):
                      tabla[nt][symbol] = production # We add the production rule (not neccesarily null production)
                  else:
                      if tabla[nt][symbol] != production:
-                         print("Grammar is not LL(1) because is ambiguous")
+                         print("Grammar is not LL(1) because is ambiguous\n")
                          return False
  
- print("The grammar is LL(1)")
+ print("The grammar is LL(1)\n")
  return True
 
 # Get the FIRST set for a production - to verify if the production rule produces the terminal that we need
@@ -300,9 +341,37 @@ def check_left_recursion(grammar):
     return False
 
 # We create the function to do the LL(1) parsing of each string
-def LL1(table, strings):
-    buffer = [] # We create an empty array that will be used to store the strings that we are going to analyze
-    return True
+def LL1(table, string):
+
+    stack = [] # We create an empty array that will be used to store the strings that we are going to analyze
+    stack = ['S', '$'] # This is always going to be the start of the 
+    i = 0 # We initializate the counter of the string
+    
+    while i < len(string):
+
+        if (stack[0] == string[i]): # If the terminal matches with the symbol in the string
+            stack.pop(0)
+            i = i+1 # The only way that we advance on the input string is deleting one terminal
+
+        elif (stack[0] == 'e'):
+            stack.pop(0)
+
+        elif table[stack[0]][string[i]]: # If there is something in the parsing table in the specified position then:
+            
+            # We get a copy of what is on the parsing table
+            production = table[stack[0]][string[i]].copy()
+            stack.pop(0) # We delete the actual nt (that must be)
+
+            for symbol in reversed(production): # we insert each symbol of the production in reverse order into the stack 
+                stack.insert(0, symbol) 
+
+        else:
+            return False
+
+    if not stack: # We verify that the stack is empty (as last verification)
+        return True
+    else:
+        return False
 
 # run main
 if __name__ == "__main__":
