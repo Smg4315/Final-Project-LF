@@ -23,15 +23,22 @@ def main():
         print("Grammar his not LL(1) because it has left recursion")
         return
 
-    # We check if the parsing table is empty, if it is we print the parsing table
-    if table:
+     # We do the LL(1) parsing of each string
+    for i in range (len(strings)):
+        LL1(table, strings[i])
+        if LL1:
+            print(f"String {i+1} is accepted")
+        else:
+            print(f"String {i+1} is not accepted")
+
+    ''' if table:
      print("grammar is LL(1)")
      for no_terminal, entradas in table.items():
         print(f"No terminal: {no_terminal}")
         for terminal, produccion in entradas.items():
-            print(f"  Con terminal '{terminal}': {produccion}")
+            print(f"  Con terminal '{terminal}': {produccion}") '''
 
-    # We print them to see that they're working
+    ''' # We print them to see that they're working
     print("\nConjuntos FIRST:")
     for nt in gramatica:
         print(f"FIRST({nt}) = {first_sets[nt]}")
@@ -39,6 +46,8 @@ def main():
     print("\nConjuntos FOLLOW:")
     for nt in gramatica:
         print(f"FOLLOW({nt}) = {follow_sets[nt]}")
+    ''' 
+    return
 
 # We define the function that will read the grammar from the file and create a dictionary with it.
 def leer_gramatica(archivo, arreglo):
@@ -308,6 +317,11 @@ def check_left_recursion(grammar):
                 print(f"Grammar has left recursion at {nt} → {production}")
                 return True
     return False
+
+# We create the function to do the LL(1) parsing of each string
+def LL1(table, strings):
+    buffer = [] # We create an empty array that will be used to store the strings that we are going to analyze
+    return True
 
 # run main
 if __name__ == "__main__":
