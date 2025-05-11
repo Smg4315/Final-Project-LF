@@ -263,7 +263,7 @@ def parsing_table(grammar, first, follow, tabla):
                                      tabla[nt][symbol] = production
                                  else: # If the parsing table is not empty we have to check if the production rule is the same as the one that we are going to add
                                      if tabla[nt][symbol] != production: # If the production rule is not the same that was already there, then the grammar is not LL(1).
-                                         print("Grammar is not LL(1) because is ambiguous\n")
+                                         print("Grammar is not LL(1)\n")
                                          return False# the function will return None
              
              # We only take into account the FOLLOW set if the production rule is a null production because its the only posible case
@@ -273,7 +273,7 @@ def parsing_table(grammar, first, follow, tabla):
                      if not tabla[nt][symbol]: 
                          tabla[nt][symbol] = production
                      else:
-                         print("Grammar is not LL(1) because is ambiguous\n")
+                         print("Grammar is not LL(1)\n")
                          return False
 
          # If the FIRST set of the NT does not contain e, we dont take into account the FOLLOW set                      
@@ -291,7 +291,7 @@ def parsing_table(grammar, first, follow, tabla):
                              tabla[nt][symbol] = production
                          else:
                              if tabla[nt][symbol] != production: # If the production rule is not the same that was already there, then the grammar is not LL(1).
-                                 print("Grammar is not LL(1) because is ambiguous\n")
+                                 print("Grammar is not LL(1)\n")
                                  return False # the function will return None
           
          # We are checking the cases where the production rule is a null production (its like to do it again but not neccesary with only e productions)
@@ -301,7 +301,7 @@ def parsing_table(grammar, first, follow, tabla):
                      tabla[nt][symbol] = production # We add the production rule (not neccesarily null production)
                  else:
                      if tabla[nt][symbol] != production:
-                         print("Grammar is not LL(1) because is ambiguous\n")
+                         print("Grammar is not LL(1)\n")
                          return False
  
  print("The grammar is LL(1)\n")

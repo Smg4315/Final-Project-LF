@@ -1,7 +1,6 @@
-3
-S -> aB e
-B -> bC e
-C -> cS e
+2
+S -> Sb c 
+A -> Sp q
 
 <--- Strings --->
 a$
