@@ -1,6 +1,9 @@
 # We import the libraries that will be used. In this case, we will use the sys library to handle errors
 from collections import defaultdict
+from collections import namedtuple
 import sys
+
+Item = namedtuple('Item', ['lhs', 'rhs', 'dot'])  # Ej: Item("A", ["B", "C"], 1)
 
 # We define the main function that will create at the moment a dictionary with the specified grammar.
 def main():
@@ -8,7 +11,7 @@ def main():
     # We create the dictionary and fill it with the respective grammar
     strings = [] # We create an empty array that will be used to store the strings that we are going to analyze
     LL = False # We create this bools to clasify wether a grammmar is LL(1) or SLR(1) to implement it corresponding parser or both
-    LR = True # supossing
+    LR = False # supossing
 
     gramatica = leer_gramatica('Grammars.txt', strings)
     
@@ -19,58 +22,48 @@ def main():
     # We create a dictionary of dictionaries to store the parsing table (globaly - LL(1)) 
     tabla = defaultdict(lambda: defaultdict(list)) 
 
-    # With this, we clasify if the grammar is LL or not
-    if ( not check_left_recursion(gramatica) ) and ( parsing_table(gramatica, first_sets, follow_sets, tabla) ):
+    # Verificar si es LL(1)
+    tabla_ll1 = defaultdict(lambda: defaultdict(list))
+    if not check_left_recursion(gramatica) and parsing_table(gramatica, first_sets, follow_sets, tabla_ll1):
         LL = True
-    else:
-        LL = False
 
-    # In this space the grammar is clasified by LR or not... (Andres n Sebastian 😁)
+    # Verificar si es SLR(1)
+    states, transitions = build_lr0_automaton(gramatica)
+    action_table, goto_table, is_slr1 = build_slr1_table(states, transitions, gramatica, follow_sets)
+    if is_slr1:
+        LR = True
 
-    if LL and LR: # If the grammar is both LL(1) and LR(1) the user decides what grammar to use:
-
-        print("The grammar is both LL and LR \n ")
-        option = '' # We initializate this
-
-        while (option != 'Q'):
-
+    # Caso 1: ambas
+    if LL and LR:
+        while True:
             print("Select a parser (T: for LL(1), B: for SLR(1), Q: quit):")
-            option = input()
-                
-            if option == 'T': # We do the LL(1) parsing for each string given 
-                print("LL(1) parsing \n ")
-
-                # We do the LL(1) parsing of each string
-                for i in range (len(strings)):
-                    bool_LL = LL1(tabla, strings[i])
-                    if bool_LL:
-                        print(f"String {strings[i]} is accepted \n ")
-                    else:
-                        print(f"String {strings[i]} is rejected \n ") 
-
+            option = input().strip().upper()
+            if option == 'T':
+                for cadena in strings:
+                    print("yes" if LL1(tabla_ll1, cadena) else "no")
             elif option == 'B':
-                print("SLR(1) parsing \n ")
+                for cadena in strings:
+                    print("yes" if slr1_parser(cadena, action_table, goto_table, trace=False) else "no")
             elif option == 'Q':
                 break
             else:
-                print("invalid option try again \n ")
+                continue
 
-    elif LL:
-        print("The grammar is LL(1) \n ")
+    # Caso 2: solo LL(1)
+    elif LL and not LR:
+        print("Grammar is LL(1).")
+        for cadena in strings:
+            print("yes" if LL1(tabla_ll1, cadena) else "no")
 
-        # We do the LL(1) parsing of each string
-        for i in range (len(strings)):
-            bool_LL = LL1(tabla, strings[i])
-            if bool_LL:
-                print(f"String {strings[i]} is accepted\n")
-            else:
-                print(f"String {strings[i]} is rejected\n")
+    # Caso 3: solo SLR(1)
+    elif LR and not LL:
+        print("Grammar is SLR(1).")
+        for cadena in strings:
+            print("yes" if slr1_parser(cadena, action_table, goto_table, trace=False) else "no")
 
-    elif LR:
-        print("The grammar is SLR(1)\n")
+    # Caso 4: ninguna
     else:
-        print("Grammar is neither LL(1) nor SLR(1). \n")
-            
+        print("Grammar is neither LL(1) nor SLR(1).")
 
 # We define the function that will read the grammar from the file and create a dictionary with it.
 def leer_gramatica(archivo, arreglo):
@@ -263,7 +256,6 @@ def parsing_table(grammar, first, follow, tabla):
                                      tabla[nt][symbol] = production
                                  else: # If the parsing table is not empty we have to check if the production rule is the same as the one that we are going to add
                                      if tabla[nt][symbol] != production: # If the production rule is not the same that was already there, then the grammar is not LL(1).
-                                         print("Grammar is not LL(1)\n")
                                          return False# the function will return None
              
              # We only take into account the FOLLOW set if the production rule is a null production because its the only posible case
@@ -273,7 +265,6 @@ def parsing_table(grammar, first, follow, tabla):
                      if not tabla[nt][symbol]: 
                          tabla[nt][symbol] = production
                      else:
-                         print("Grammar is not LL(1)\n")
                          return False
 
          # If the FIRST set of the NT does not contain e, we dont take into account the FOLLOW set                      
@@ -291,7 +282,6 @@ def parsing_table(grammar, first, follow, tabla):
                              tabla[nt][symbol] = production
                          else:
                              if tabla[nt][symbol] != production: # If the production rule is not the same that was already there, then the grammar is not LL(1).
-                                 print("Grammar is not LL(1)\n")
                                  return False # the function will return None
           
          # We are checking the cases where the production rule is a null production (its like to do it again but not neccesary with only e productions)
@@ -301,10 +291,7 @@ def parsing_table(grammar, first, follow, tabla):
                      tabla[nt][symbol] = production # We add the production rule (not neccesarily null production)
                  else:
                      if tabla[nt][symbol] != production:
-                         print("Grammar is not LL(1)\n")
                          return False
- 
- print("The grammar is LL(1)\n")
  return True
 
 # Get the FIRST set for a production - to verify if the production rule produces the terminal that we need
@@ -372,6 +359,225 @@ def LL1(table, string):
         return True
     else:
         return False
+
+def augmented_grammar(grammar):
+    new_grammar = {}  # use normal dict, insertion order matters
+    new_grammar["S'"] = [['S']]  # add the augmented production first
+
+    for nt in grammar:
+        new_grammar[nt] = grammar[nt]  # preserve order
+
+    return new_grammar
+
+def closure(I, new_grammar):
+    closure_set = set(I)
+    added = True
+
+    while added:
+        added = False
+        new_items = set()
+
+        for item in closure_set:
+            lhs, rhs, dot = item
+            if dot < len(rhs):
+                symbol = rhs[dot]
+                if symbol in new_grammar:
+                    for production in new_grammar[symbol]:
+                        nuevo = Item(symbol, tuple(production), 0)
+                        if nuevo not in closure_set:
+                            new_items.add(nuevo)
+
+        if new_items:
+            closure_set.update(new_items)
+            added = True
+
+    return closure_set
+
+def goto(I, symbol, new_grammar):
+    moved_items = set()
+
+    for item in I:
+        lhs, rhs, dot = item
+        if dot < len(rhs) and rhs[dot] == symbol:
+            moved_items.add(Item(lhs, tuple(rhs), dot + 1))
+
+    return closure(moved_items, new_grammar)
+
+
+def build_lr0_automaton(grammar):
+    from collections import deque
+
+    aug_grammar = augmented_grammar(grammar)
+    I0 = closure([Item("S'", ('S',), 0)], aug_grammar)
+
+    states = []
+    transitions = {}
+    state_indices = {}
+    queue = deque()
+
+    state_indices[frozenset(I0)] = 0
+    states.append(I0)
+    queue.append(I0)
+
+    while queue:
+        current = queue.popleft()
+        current_index = state_indices[frozenset(current)]
+
+        symbols = []
+        seen = set()
+        for item in current:
+            if item.dot < len(item.rhs):
+                sym = item.rhs[item.dot]
+                if sym not in seen:
+                    symbols.append(sym)
+                    seen.add(sym)
+
+        symbols.sort(key=lambda x: (x != 'S\'', x != 'S', x))  # Prioritize S', then S, then rest
+
+        for symbol in symbols:
+            next_state = goto(current, symbol, aug_grammar)
+            frozen_next = frozenset(next_state)
+
+            if frozen_next not in state_indices:
+                state_indices[frozen_next] = len(states)
+                states.append(next_state)
+                queue.append(next_state)
+
+            transitions[(current_index, symbol)] = state_indices[frozen_next]
+
+    return states, transitions
+
+def build_slr1_table(states, transitions, grammar, follow):
+    action_table = defaultdict(dict)
+    goto_table = defaultdict(dict)
+
+    aug_grammar = augmented_grammar(grammar)
+
+    for state_index, state in enumerate(states):
+        for item in state:
+            lhs, rhs, dot = item
+
+            # Case 1: A → α • a β  → SHIFT
+            if dot < len(rhs):
+                symbol = rhs[dot]
+                if symbol not in grammar:  # it's a terminal
+                    next_state = transitions.get((state_index, symbol))
+                    if next_state is not None:
+                        if symbol in action_table[state_index]:
+                            if action_table[state_index][symbol] != ('shift', next_state):
+                                print(f"Conflict at state {state_index} on symbol '{symbol}'")
+                                return None, None, False
+                        else:
+                            action_table[state_index][symbol] = ('shift', next_state)
+
+            # Case 2: A → α •  → REDUCE
+            elif lhs != "S'":  # not the augmented rule
+                for terminal in follow[lhs]:
+                    if terminal in action_table[state_index]:
+                        if action_table[state_index][terminal] != ('reduce', (lhs, rhs)):
+                            print(f"Conflict at state {state_index} on symbol '{terminal}'")
+                            return None, None, False
+                    else:
+                        action_table[state_index][terminal] = ('reduce', (lhs, rhs))
+
+            # Case 3: S' → S •  → ACCEPT
+            elif lhs == "S'" and rhs == ('S',):
+                action_table[state_index]['$'] = ('accept',)
+
+        # GOTO: A → α • B β (B is non-terminal)
+        for (from_idx, symbol), to_idx in transitions.items():
+            if from_idx == state_index and symbol in grammar:  # it's a non-terminal
+                goto_table[state_index][symbol] = to_idx
+
+    return action_table, goto_table, True
+
+
+def print_slr1_table(action_table, goto_table):
+    # Collect all terminals and non-terminals from the tables
+    terminals = set()
+    non_terminals = set()
+
+    for state in action_table:
+        terminals.update(action_table[state].keys())
+
+    for state in goto_table:
+        non_terminals.update(goto_table[state].keys())
+
+    terminals = sorted([t for t in terminals if t != '$']) + ['$']
+    non_terminals = sorted(non_terminals)
+
+    # Header
+    header = ['State'] + [f'a:{t}' for t in terminals] + [f'g:{nt}' for nt in non_terminals]
+    print('\t'.join(header))
+
+    # Rows
+    for state in sorted(set(action_table.keys()) | set(goto_table.keys())):
+        row = [str(state)]
+        for t in terminals:
+            action = action_table[state].get(t, '')
+            if action:
+                if action[0] == 'shift':
+                    row.append(f's{action[1]}')
+                elif action[0] == 'reduce':
+                    lhs, rhs = action[1]
+                    rhs_str = ''.join(rhs)
+                    row.append(f'r:{lhs}->{rhs_str}')
+                elif action[0] == 'accept':
+                    row.append('acc')
+            else:
+                row.append('')
+        for nt in non_terminals:
+            goto = goto_table[state].get(nt, '')
+            row.append(str(goto) if goto != '' else '')
+        print('\t'.join(row))
+
+def slr1_parser(string, action_table, goto_table, trace=True):
+    stack = [0]
+    input_string = list(string) + ['$']
+    pointer = 0
+
+    if trace:
+        print("\nSLR(1) Parsing Trace:")
+        print(f"{'Stack':<20} {'Input':<20} {'Action'}")
+
+    while True:
+        state = stack[-1]
+        symbol = input_string[pointer]
+        action = action_table.get(state, {}).get(symbol, None)
+
+        stack_str = ' '.join(map(str, stack))
+        input_str = ''.join(input_string[pointer:])
+        action_str = ""
+
+        if action is None:
+            if trace:
+                print(f"{stack_str:<20} {input_str:<20} ERROR: Unexpected symbol '{symbol}'")
+            return False
+
+        if action[0] == 'shift':
+            action_str = f"shift s{action[1]}"
+            stack.append(symbol)
+            stack.append(action[1])
+            pointer += 1
+
+        elif action[0] == 'reduce':
+            lhs, rhs = action[1]
+            action_str = f"reduce {lhs} → {''.join(rhs)}"
+            if rhs != ('e',):  # not epsilon
+                for _ in range(len(rhs) * 2):
+                    stack.pop()
+            current_state = stack[-1]
+            stack.append(lhs)
+            stack.append(goto_table[current_state][lhs])
+
+        elif action[0] == 'accept':
+            if trace:
+                print(f"{stack_str:<20} {input_str:<20} ACCEPT")
+            return True
+
+        if trace:
+            print(f"{stack_str:<20} {input_str:<20} {action_str}")
+
 
 # run main
 if __name__ == "__main__":

@@ -1,9 +1,9 @@
 2
-S -> Sb c 
-A -> Sp q
+S -> BB
+B -> aB b
 
 <--- Strings --->
-a$
-abc$
-abcabcabc$
+bb$
+abb$
+bab$
 aba$
