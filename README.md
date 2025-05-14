@@ -1,4 +1,4 @@
-![Banner](images\banner.jpeg)
+![Banner](https://github.com/user-attachments/assets/dd2b027a-8dd4-48d1-ab19-2df19d43fb26)
 
 # 💻 LL(1) and SLR(1) Grammar Parser Implementation - Final Project 📜
 
