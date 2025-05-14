@@ -1,4 +1,4 @@
-![Banner](images\abstract-technology-banner-background.jpg)
+![Banner](images\banner.jpeg)
 
 # 💻 LL(1) and SLR(1) Grammar Parser Implementation - Final Project 📜
 
