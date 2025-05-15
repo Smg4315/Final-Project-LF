@@ -26,7 +26,7 @@ python3 --version
 ### Running the Code:
 1. Clone this repository:
 ```sh
-git clone https://github.com/Smg4315/Final-Project-LF
+git clone https://github.com/Smg4315/Final-Project-LF.git
 cd <the_folder_in_which_you_saved_the_repository>
 ```
 
